@@ -122,34 +122,36 @@ Following modern LLMOps best practices, this architecture separates deterministi
 ## 📂 Repository Structure
 
 ```
-refund-agent-with-eval/
+refund-agent-llmops/
 ├── agent/
-│   ├── agent.py          # LangGraph CompiledStateGraph & invocation pipeline
-│   ├── db.py             # SQLite database manager, schema, and relative date seeder
-│   ├── data.py           # Dynamic dictionary proxy connected to SQLite
-│   ├── models.py         # Configurable LLM initialization (gpt-4o-mini, Groq)
-│   ├── objects.py        # Pydantic response models (Answer, PurchaseItem)
-│   ├── prompts.py        # Enterprise system prompt & policy guidelines
-│   └── tools.py          # Refund calculation, ticket issuance, and guardrails
+│   ├── agent.py              # LangGraph CompiledStateGraph & invocation pipeline
+│   ├── db.py                 # SQLite database manager, schema, and relative date seeder
+│   ├── data.py               # Dynamic dictionary proxy connected to SQLite
+│   ├── models.py             # Configurable LLM initialization (gpt-4o-mini, Groq)
+│   ├── objects.py            # Pydantic response models (Answer, PurchaseItem)
+│   ├── prompts.py            # Enterprise system prompt & policy guidelines
+│   └── tools.py              # Refund calculation, ticket issuance, and guardrails
 ├── evaluations/
+│   ├── pyramid_runner.py     # 4-Tier Testing Pyramid Orchestrator (with early-exit gate)
 │   ├── dataset.py            # 14 Single-turn Goldens across 4 categories
 │   ├── dataset_multiturn.py  # Multi-turn conversational dialogue scenarios
 │   ├── eval_all.py           # Single-turn evaluation runner (dry-run, category filters)
 │   ├── eval_multiturn.py     # Multi-turn evaluation runner (ConversationalTestCase)
 │   ├── model.py              # Evaluator model configuration
-│   ├── answer_correctness.py
-│   ├── argument_correctness.py
-│   ├── plan_adherence.py
-│   ├── plan_quality.py
-│   ├── step_efficiency.py
-│   ├── task_completion.py
-│   └── tool_correctness.py
+│   └── ...                   # DeepEval trace & single-turn metric scripts
+├── tests/
+│   ├── test_agent_flow.py    # Deterministic LangGraph state machine & schema tests ($0)
+│   ├── test_database.py      # SQLite queries, relative dates, and duplicate prevention ($0)
+│   └── test_tools.py         # Tool calculations, inputs, and $100 escalation tests ($0)
 ├── .github/workflows/
-│   └── eval.yml          # GitHub Actions CI/CD regression test gate
-├── app.py                # Streamlit dual-pane interactive app & agent inspector
-├── main.py               # Unified CLI runner (--ui, --cli, --eval, --seed)
-├── pyproject.toml        # uv dependency management configuration
-└── README.md             # Architecture & portfolio documentation
+│   └── eval.yml              # GitHub Actions CI/CD regression test gate
+├── app.py                    # Streamlit dual-pane interactive app & agent inspector
+├── main.py                   # Unified CLI runner (--pyramid, --ui, --cli, --eval, --seed)
+├── Dockerfile                # Production Docker container image with healthcheck
+├── docker-compose.yml        # One-click Docker Compose deployment definition
+├── pyproject.toml            # uv dependency management configuration
+├── pytest.ini                # Pytest configuration
+└── README.md                 # Architecture & portfolio documentation
 ```
 
 ---
@@ -196,22 +198,32 @@ Open [http://localhost:8501](http://localhost:8501) in your browser.
 
 ### 4. Run LLMOps Evaluations
 
-**A. Zero-Cost Single-Turn Dry Run ($0 cost):**
+**A. Run Complete Testing Pyramid (Safe Dry-Run across all 4 layers - $0 cost):**
+```bash
+uv run python main.py --pyramid
+```
+
+**B. Run Layer 1 Deterministic Unit Tests Only (< 2s, $0 cost):**
+```bash
+uv run pytest -v
+```
+
+**C. Zero-Cost Single-Turn Dry Run ($0 cost):**
 ```bash
 uv run python main.py --eval dry-run
 ```
 
-**B. Zero-Cost Multi-Turn Conversational Dry Run ($0 cost):**
+**D. Zero-Cost Multi-Turn Conversational Dry Run ($0 cost):**
 ```bash
 uv run python main.py --multiturn dry-run
 ```
 
-**C. Run Single-Turn Smoke Gate (2 test cases):**
+**E. Run Single-Turn Smoke Gate (2 test cases):**
 ```bash
 uv run python main.py --eval smoke
 ```
 
-**D. Run Multi-Turn Conversational Evaluation:**
+**F. Run Multi-Turn Conversational Live Gate:**
 ```bash
 uv run python main.py --multiturn live
 ```
