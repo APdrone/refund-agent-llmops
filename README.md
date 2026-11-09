@@ -87,7 +87,32 @@ Incorporates **7 production metrics** evaluated across **14 categorized test cas
 | **ArgumentCorrectnessMetric**| Single-Turn | Enforces schema and parameter constraints | `N/A` |
 | **GEval (Answer Correctness)**| LLM-as-Judge | Checks logical alignment of customer answer | `≥ 0.80` |
 
-### 4. Interactive Glass-Box UI (`app.py`)
+### 4. The Agentic AI Testing Pyramid
+
+Following modern LLMOps best practices, this architecture separates deterministic business rules from probabilistic agent evaluations into a 4-tier testing pyramid:
+
+```
+                  / \
+                 /   \   Layer 4: Production Observability & Audit
+                /-----\  (Streamlit live inspector, audit logs, supervisor approvals)
+               /       \  Layer 3: Multi-Turn Trajectory Evals
+              /---------\ (DeepEval ConversationalTestCase, context retention, slot-filling)
+             /           \  Layer 2: Single-Turn LLM Evals
+            /-------------\ (ToolCorrectness, ArgumentCorrectness, GEval policy checks)
+           /               \  Layer 1: Deterministic Unit Tests (Pytest)
+          /-----------------\ (SQLite queries, relative dates, idempotency, schemas - $0 cost, <2s)
+```
+
+| Layer | Testing Target | Test Tool | Latency & Cost |
+| :--- | :--- | :--- | :--- |
+| **Layer 1: Deterministic** | Database logic, duplicate prevention (`is_refunded`), schemas | `pytest` | **< 2s / $0.00** |
+| **Layer 2: Single-Turn** | Tool selection accuracy, parameter extraction, GEval | `DeepEval` | **~2s / Low cost** |
+| **Layer 3: Multi-Turn** | Context memory across turns, slot filling, plan adherence | `DeepEval` | **~5s / Moderate cost** |
+| **Layer 4: Observability** | Live trace telemetry, financial limit escalation (> $100) | `Streamlit / Logs` | **Continuous Ops** |
+
+---
+
+### 5. Interactive Glass-Box UI (`app.py`)
 * **Left Pane**: Customer support chat with 10 preloaded test scenarios.
 * **Right Pane**: Real-time tool telemetry, decision status, dynamic SQLite table viewer, and LLMOps documentation.
 * **One-Click Resets**: Instantly restore clean database state for demonstrations.
@@ -107,9 +132,11 @@ refund-agent-with-eval/
 │   ├── prompts.py        # Enterprise system prompt & policy guidelines
 │   └── tools.py          # Refund calculation, ticket issuance, and guardrails
 ├── evaluations/
-│   ├── dataset.py        # 14 Goldens across 4 categories (Happy, Boundary, Security, Input)
-│   ├── eval_all.py       # Comprehensive evaluation runner (dry-run, category filters, reports)
-│   ├── model.py          # Evaluator model configuration
+│   ├── dataset.py            # 14 Single-turn Goldens across 4 categories
+│   ├── dataset_multiturn.py  # Multi-turn conversational dialogue scenarios
+│   ├── eval_all.py           # Single-turn evaluation runner (dry-run, category filters)
+│   ├── eval_multiturn.py     # Multi-turn evaluation runner (ConversationalTestCase)
+│   ├── model.py              # Evaluator model configuration
 │   ├── answer_correctness.py
 │   ├── argument_correctness.py
 │   ├── plan_adherence.py
@@ -155,20 +182,24 @@ Open [http://localhost:8501](http://localhost:8501) in your browser.
 
 ### 4. Run LLMOps Evaluations
 
-**A. Zero-Cost Dry Run (inspect test suite structure without calling LLMs):**
+**A. Zero-Cost Single-Turn Dry Run ($0 cost):**
 ```bash
 uv run python main.py --eval dry-run
 ```
 
-**B. Run Smoke Test (cost-conscious 2-case evaluation):**
+**B. Zero-Cost Multi-Turn Conversational Dry Run ($0 cost):**
+```bash
+uv run python main.py --multiturn dry-run
+```
+
+**C. Run Single-Turn Smoke Gate (2 test cases):**
 ```bash
 uv run python main.py --eval smoke
 ```
 
-**C. Run Specific Test Category:**
+**D. Run Multi-Turn Conversational Evaluation:**
 ```bash
-# Options: happy, boundary, guardrails, validation, all
-uv run python evaluations/eval_all.py --category boundary --report boundary_report.md
+uv run python main.py --multiturn live
 ```
 
 ---

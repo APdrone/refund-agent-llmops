@@ -1,7 +1,8 @@
 """
 Main Entrypoint for Refund Agent with Evaluation System.
-Provides command-line shortcuts to launch the Streamlit UI, run evaluation suites,
-test the agent via CLI, or reset the SQLite database.
+Provides command-line shortcuts to launch the Streamlit UI, run evaluation suites
+(single-turn & multi-turn), run deterministic pytest unit tests, test via CLI,
+or reset the SQLite database.
 """
 
 import argparse
@@ -23,10 +24,21 @@ def main():
         help="Start an interactive terminal conversation session",
     )
     parser.add_argument(
+        "--pytest",
+        action="store_true",
+        help="Run Layer 1 deterministic unit tests with pytest ($0 cost)",
+    )
+    parser.add_argument(
         "--eval",
         choices=["dry-run", "smoke", "boundary", "guardrails", "all"],
         default=None,
-        help="Run DeepEval evaluation test suite",
+        help="Run DeepEval single-turn evaluation test suite",
+    )
+    parser.add_argument(
+        "--multiturn",
+        choices=["dry-run", "live"],
+        default=None,
+        help="Run DeepEval multi-turn conversational evaluation suite",
     )
     parser.add_argument(
         "--seed",
@@ -35,12 +47,14 @@ def main():
     )
     args = parser.parse_args()
 
-    project_root = Path(__file__).resolve().parent
-
     if args.seed:
         from agent.db import seed_db
         seed_db()
         print("Successfully re-seeded SQLite database with relative dates.")
+        return
+
+    if args.pytest:
+        subprocess.run([sys.executable, "-m", "pytest", "-v"])
         return
 
     if args.ui:
@@ -60,17 +74,27 @@ def main():
             subprocess.run([sys.executable, "evaluations/eval_all.py", "--category", args.eval])
         return
 
+    if args.multiturn:
+        if args.multiturn == "dry-run":
+            subprocess.run([sys.executable, "evaluations/eval_multiturn.py", "--dry-run"])
+        else:
+            subprocess.run([sys.executable, "evaluations/eval_multiturn.py"])
+        return
+
     # Default: Show helpful usage banner
-    print("\n" + "=" * 65)
+    print("\n" + "=" * 70)
     print(" 🛡️  Refund Customer Support Agent & Evaluation System")
-    print("=" * 65)
+    print("=" * 70)
     print(" Available Commands:")
-    print("   1. Launch Web UI:         uv run python main.py --ui")
-    print("   2. Interactive CLI Chat:  uv run python main.py --cli")
-    print("   3. Dry-Run Eval ($0):     uv run python main.py --eval dry-run")
-    print("   4. Smoke Test Gate:       uv run python main.py --eval smoke")
-    print("   5. Re-seed Database:      uv run python main.py --seed")
-    print("=" * 65 + "\n")
+    print("   1. Layer 1 Unit Tests ($0):  uv run python main.py --pytest")
+    print("   2. Single-Turn Dry-Run ($0): uv run python main.py --eval dry-run")
+    print("   3. Multi-Turn Dry-Run ($0):  uv run python main.py --multiturn dry-run")
+    print("   4. Single-Turn Smoke Gate:   uv run python main.py --eval smoke")
+    print("   5. Multi-Turn Live Gate:     uv run python main.py --multiturn live")
+    print("   6. Launch Web UI:            uv run python main.py --ui")
+    print("   7. Interactive CLI Chat:     uv run python main.py --cli")
+    print("   8. Re-seed Database:         uv run python main.py --seed")
+    print("=" * 70 + "\n")
 
 
 if __name__ == "__main__":
