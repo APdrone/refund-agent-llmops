@@ -1,0 +1,25 @@
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Testing & Evals
+.pytest_cache/
+.deepeval/
+.deepeval-cache.json
+
+# Git & OS
+.git/
+.gitignore
+.DS_Store
+Thumbs.db
+
+# Documentation artifacts & notes
+note.md
+image*.png

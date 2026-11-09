@@ -156,7 +156,21 @@ refund-agent-with-eval/
 
 ## ⚡ Quickstart Guide
 
-### 1. Clone & Install Dependencies
+### Option A: Run with Docker (Fastest, Zero Local Setup)
+```bash
+# 1. Clone & copy environment variables
+cp .env.example .env   # Add your OPENAI_API_KEY
+
+# 2. Build and launch containerized app
+docker-compose up --build
+```
+Open [http://localhost:8501](http://localhost:8501) in your browser.
+
+---
+
+### Option B: Local Setup with `uv`
+
+#### 1. Clone & Install Dependencies
 This project uses [uv](https://github.com/astral-sh/uv) for fast package resolution:
 
 ```bash

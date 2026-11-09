@@ -1,0 +1,18 @@
+services:
+  refund-agent-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: refund-agent-llmops
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - LLM_MODEL=gpt-4o-mini
+      - EVAL_MODEL=gpt-4o-mini
+    volumes:
+      - ./refund_system.db:/app/refund_system.db
+    restart: unless-stopped
