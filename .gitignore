@@ -1,0 +1,36 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+
+# Environment Variables & Secrets
+.env
+.env.local
+!.env.example
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# DeepEval Cache & Logs
+.deepeval/
+.deepeval-cache.json
+
+# Streamlit
+.streamlit/
+
+# Temporary / OS Files & Tutorial Scratchpad
+.DS_Store
+Thumbs.db
+note.md
+image*.png

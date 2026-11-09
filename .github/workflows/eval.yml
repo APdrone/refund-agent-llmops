@@ -1,0 +1,75 @@
+name: Agent Evaluation Regression Gate
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'agent/**'
+      - 'evaluations/**'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'agent/**'
+      - 'evaluations/**'
+  workflow_dispatch:
+    inputs:
+      category:
+        description: 'Test category to evaluate'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - happy
+          - boundary
+          - guardrails
+          - validation
+          - all
+
+jobs:
+  evaluate-agent:
+    name: Run DeepEval Agent Test Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen || uv pip install -r pyproject.toml
+
+      - name: Initialize and Seed Database
+        run: |
+          python agent/db.py
+
+      - name: Run Agent Dry-Run Check
+        run: |
+          python evaluations/eval_all.py --dry-run
+
+      - name: Run Evaluation Suite
+        if: env.OPENAI_API_KEY != ''
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_MODEL: "gpt-4o-mini"
+          EVAL_MODEL: "gpt-4o-mini"
+        run: |
+          python evaluations/eval_all.py --category ${{ github.event.inputs.category || 'smoke' }} --report eval_report.md
+
+      - name: Upload Evaluation Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-report
+          path: eval_report.md
+
