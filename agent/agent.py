@@ -16,6 +16,11 @@ from .tools import (
 )
 from .prompts import agent_system_prompt
 from .objects import Answer
+from .guardrails import (
+    redact_pii,
+    screen_prompt_injection,
+    validate_output_consistency,
+)
 
 load_dotenv()
 
@@ -40,17 +45,43 @@ def invoke_agent(
     callbacks: Optional[List[Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Standardized execution entrypoint for UI, API, and batch evaluation.
-    Returns the parsed Answer object along with tool execution traces.
+    Standardized execution entrypoint with pre-execution input guardrails
+    and post-execution output consistency validation.
     """
     tid = thread_id or str(uuid4())
+
+    # --- Pre-Execution Guardrail 1: Prompt Injection Screener ---
+    injection_check = screen_prompt_injection(user_message)
+    if injection_check["is_flagged"]:
+        return {
+            "thread_id": tid,
+            "answer": "no refund can be issued because system policies cannot be bypassed and requests must match valid purchase history.",
+            "conversation": False,
+            "refund_status": "DENIED",
+            "refund_amount": 0.0,
+            "escalated_to_human": False,
+            "reason": f"Security Guardrail: {injection_check['reason']}",
+            "tools_executed": [],
+            "guardrails": {
+                "injection_screen": injection_check,
+                "pii_redacted": False,
+                "output_validation": {"is_valid": True, "warnings": []},
+            },
+            "raw_response": None,
+        }
+
+    # --- Pre-Execution Guardrail 2: PII Redaction ---
+    cleaned_message = redact_pii(user_message)
+    pii_redacted = cleaned_message != user_message
+
     config = {
         "configurable": {"thread_id": tid},
         "callbacks": callbacks or [],
     }
 
+    # Execute LangGraph state machine
     response = agent.invoke(
-        {"messages": [HumanMessage(content=user_message)]},
+        {"messages": [HumanMessage(content=cleaned_message)]},
         config=config,
     )
 
@@ -66,6 +97,13 @@ def invoke_agent(
                 "args": tool_call.get("args"),
             })
 
+    # --- Post-Execution Guardrail 3: Output Consistency Check ---
+    output_validation = validate_output_consistency(
+        answer=structured.answer if structured else "",
+        refund_status=structured.refund_status if structured else None,
+        calculated_amount=structured.refund_amount if structured else None,
+    )
+
     return {
         "thread_id": tid,
         "answer": structured.answer if structured else "",
@@ -75,6 +113,11 @@ def invoke_agent(
         "escalated_to_human": structured.escalated_to_human if structured else False,
         "reason": structured.reason if structured else None,
         "tools_executed": tools_executed,
+        "guardrails": {
+            "injection_screen": injection_check,
+            "pii_redacted": pii_redacted,
+            "output_validation": output_validation,
+        },
         "raw_response": response,
     }
 

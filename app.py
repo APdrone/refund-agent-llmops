@@ -179,6 +179,23 @@ with col_inspector:
             if trace.get("reason"):
                 st.info(f"**Policy Rationale:** {trace['reason']}")
 
+            # Guardrails Telemetry Panel
+            if trace.get("guardrails"):
+                gr = trace["guardrails"]
+                st.subheader("🛡️ Guardrail Safety Telemetry")
+                g1, g2 = st.columns(2)
+                with g1:
+                    inj = gr.get("injection_screen", {})
+                    inj_flagged = inj.get("is_flagged", False)
+                    st.markdown(f"**Injection Risk:** `{'HIGH 🚨' if inj_flagged else 'LOW ✅'}`")
+                with g2:
+                    pii_red = gr.get("pii_redacted", False)
+                    st.markdown(f"**PII Scrubbed:** `{'Yes 🔒' if pii_red else 'None Detected'}`")
+
+                out_val = gr.get("output_validation", {})
+                if not out_val.get("is_valid", True):
+                    st.warning(f"⚠️ **Output Warning:** {'; '.join(out_val.get('warnings', []))}")
+
             st.subheader("Tool Calls Made in Turn")
             tools = trace.get("tools_executed", [])
             if tools:
