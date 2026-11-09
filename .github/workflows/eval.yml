@@ -1,4 +1,4 @@
-name: Agent Evaluation Regression Gate
+name: Agentic AI Testing Pyramid CI/CD Gate
 
 on:
   push:
@@ -6,29 +6,35 @@ on:
     paths:
       - 'agent/**'
       - 'evaluations/**'
+      - 'tests/**'
   pull_request:
     branches: [ main, master ]
     paths:
       - 'agent/**'
       - 'evaluations/**'
+      - 'tests/**'
   workflow_dispatch:
     inputs:
-      category:
-        description: 'Test category to evaluate'
+      layer:
+        description: 'Pyramid layer to evaluate'
         required: true
-        default: 'smoke'
+        default: 'all'
         type: choice
         options:
-          - smoke
-          - happy
-          - boundary
-          - guardrails
-          - validation
-          - all
+          - 'all'
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+      live_mode:
+        description: 'Execute live LLM calls (otherwise safe dry-run)'
+        required: true
+        default: false
+        type: boolean
 
 jobs:
-  evaluate-agent:
-    name: Run DeepEval Agent Test Gate
+  test-pyramid:
+    name: Run Agentic Testing Pyramid
     runs-on: ubuntu-latest
 
     steps:
@@ -53,23 +59,29 @@ jobs:
         run: |
           python agent/db.py
 
-      - name: Run Agent Dry-Run Check
+      # TIER 1: Free Deterministic Gatekeeper (Fails fast before calling LLMs)
+      - name: Layer 1 - Deterministic Pytest Gate ($0 Cost)
         run: |
-          python evaluations/eval_all.py --dry-run
+          pytest -v tests/
 
-      - name: Run Evaluation Suite
-        if: env.OPENAI_API_KEY != ''
+      # TIER 2 & 3: Evaluation Suite Verification (Dry-Run by default)
+      - name: Run Testing Pyramid Orchestrator
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_MODEL: "gpt-4o-mini"
           EVAL_MODEL: "gpt-4o-mini"
         run: |
-          python evaluations/eval_all.py --category ${{ github.event.inputs.category || 'smoke' }} --report eval_report.md
+          if [ "${{ github.event.inputs.live_mode }}" = "true" ] && [ -n "${{ secrets.OPENAI_API_KEY }}" ]; then
+            python evaluations/pyramid_runner.py --layer ${{ github.event.inputs.layer || 'all' }} --live
+          else
+            python evaluations/pyramid_runner.py --layer ${{ github.event.inputs.layer || 'all' }}
+          fi
 
       - name: Upload Evaluation Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: evaluation-report
-          path: eval_report.md
-
+          name: evaluation-artifacts
+          path: |
+            *.md
+            *.json

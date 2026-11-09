@@ -24,9 +24,16 @@ def main():
         help="Start an interactive terminal conversation session",
     )
     parser.add_argument(
-        "--pytest",
+        "--pyramid",
+        choices=["all", "1", "2", "3", "4"],
+        nargs="?",
+        const="all",
+        help="Run the complete Agentic AI Testing Pyramid (Layer 1 -> 2 -> 3 -> 4)",
+    )
+    parser.add_argument(
+        "--live",
         action="store_true",
-        help="Run Layer 1 deterministic unit tests with pytest ($0 cost)",
+        help="Execute live LLM calls for Layer 2/3 (default is safe dry-run mode)",
     )
     parser.add_argument(
         "--eval",
@@ -53,8 +60,11 @@ def main():
         print("Successfully re-seeded SQLite database with relative dates.")
         return
 
-    if args.pytest:
-        subprocess.run([sys.executable, "-m", "pytest", "-v"])
+    if args.pyramid:
+        cmd = [sys.executable, "evaluations/pyramid_runner.py", "--layer", args.pyramid]
+        if args.live:
+            cmd.append("--live")
+        subprocess.run(cmd)
         return
 
     if args.ui:
@@ -83,17 +93,17 @@ def main():
 
     # Default: Show helpful usage banner
     print("\n" + "=" * 70)
-    print(" 🛡️  Refund Customer Support Agent & Evaluation System")
+    print(" 🛡️  Refund Customer Support Agent & LLMOps Evaluation System")
     print("=" * 70)
     print(" Available Commands:")
-    print("   1. Layer 1 Unit Tests ($0):  uv run python main.py --pytest")
-    print("   2. Single-Turn Dry-Run ($0): uv run python main.py --eval dry-run")
-    print("   3. Multi-Turn Dry-Run ($0):  uv run python main.py --multiturn dry-run")
-    print("   4. Single-Turn Smoke Gate:   uv run python main.py --eval smoke")
-    print("   5. Multi-Turn Live Gate:     uv run python main.py --multiturn live")
-    print("   6. Launch Web UI:            uv run python main.py --ui")
-    print("   7. Interactive CLI Chat:     uv run python main.py --cli")
-    print("   8. Re-seed Database:         uv run python main.py --seed")
+    print("   1. Run Testing Pyramid ($0):  uv run python main.py --pyramid")
+    print("   2. Single-Turn Dry-Run ($0):  uv run python main.py --eval dry-run")
+    print("   3. Multi-Turn Dry-Run ($0):   uv run python main.py --multiturn dry-run")
+    print("   4. Single-Turn Smoke Gate:    uv run python main.py --eval smoke")
+    print("   5. Multi-Turn Live Gate:      uv run python main.py --multiturn live")
+    print("   6. Launch Web UI:             uv run python main.py --ui")
+    print("   7. Interactive CLI Chat:      uv run python main.py --cli")
+    print("   8. Re-seed Database:          uv run python main.py --seed")
     print("=" * 70 + "\n")
 
 

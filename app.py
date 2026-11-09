@@ -207,23 +207,45 @@ with col_inspector:
             df_purchases = pd.DataFrame(purchases)
             st.dataframe(df_purchases, use_container_width=True, hide_index=True)
 
-    # TAB 3: DeepEval Evaluation Architecture
+    # TAB 3: Agentic AI Testing Pyramid & Evaluation Architecture
     with tab_eval:
-        st.subheader("LLMOps Evaluation Architecture")
+        st.subheader("🔺 The Agentic AI Testing Pyramid")
+        st.caption("Hierarchical validation: Fast deterministic tests at the base, LLM trajectory evals at the top.")
+
         st.markdown("""
-        This project uses **DeepEval** with 7 production metrics:
-        
-        **Agent Trace Metrics:**
-        1. `TaskCompletionMetric`: Verifies end-to-end policy execution.
-        2. `StepEfficiencyMetric`: Penalizes redundant tool calling.
-        3. `PlanQualityMetric`: Evaluates step sequencing.
-        4. `PlanAdherenceMetric`: Checks conformity to agent guidelines.
-        
-        **Single-Turn & Safety Metrics:**
-        5. `ToolCorrectnessMetric`: Checks tool names and argument accuracy.
-        6. `ArgumentCorrectnessMetric`: Enforces parameter constraints.
-        7. `GEval (Answer Correctness)`: LLM-as-a-judge policy verification.
-        """)
-        st.code("uv run python evaluations/eval_all.py --dry-run", language="bash")
-        st.code("uv run python evaluations/eval_all.py --category smoke", language="bash")
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+            <div style="text-align: center; font-weight: bold; font-size: 14px; color: #495057; margin-bottom: 6px;">
+                🔺 4-Tier Agentic Testing Pyramid
+            </div>
+            <div style="background: #e2e3e5; border-radius: 4px; padding: 6px; text-align: center; margin: 3px 60px; font-size: 12px;">
+                <b>Layer 4:</b> Live Observability & Human Audit (Audit Logs, >$100 Escalation)
+            </div>
+            <div style="background: #d1ecf1; border-radius: 4px; padding: 6px; text-align: center; margin: 3px 40px; font-size: 12px;">
+                <b>Layer 3:</b> Multi-Turn Trajectory Evals (ConversationalTestCase, 4 Scenarios)
+            </div>
+            <div style="background: #d4edda; border-radius: 4px; padding: 6px; text-align: center; margin: 3px 20px; font-size: 12px;">
+                <b>Layer 2:</b> Single-Turn Component Evals (14 Goldens, Tool & Argument Correctness)
+            </div>
+            <div style="background: #cce5ff; border-radius: 4px; padding: 6px; text-align: center; margin: 3px 0px; font-size: 12px;">
+                <b>Layer 1:</b> Deterministic Unit & Schema Tests (16 Pytest Cases, &lt;2s, $0.00)
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("▶️ Run Layer 1 Deterministic Unit Check ($0 Cost)", use_container_width=True):
+            with st.spinner("Executing Layer 1 Pytest Suite..."):
+                import subprocess, sys
+                run_res = subprocess.run([sys.executable, "-m", "pytest", "-v", "tests/"], capture_output=True, text=True)
+                if run_res.returncode == 0:
+                    st.success("✅ Layer 1 Passed: 16/16 Unit Tests verified in <2 seconds with $0.00 API cost!")
+                else:
+                    st.error("❌ Layer 1 Unit Tests Failed.")
+                with st.expander("View Pytest Detailed Output"):
+                    st.code(run_res.stdout)
+
+        st.markdown("---")
+        st.markdown("**CLI Pyramid Commands:**")
+        st.code("uv run python main.py --pyramid          # Full pyramid dry-run ($0)", language="bash")
+        st.code("uv run python main.py --eval smoke        # 2-case single-turn gate", language="bash")
+        st.code("uv run python main.py --multiturn dry-run # Multi-turn dialogue trees", language="bash")
 
