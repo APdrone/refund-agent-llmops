@@ -48,6 +48,11 @@ def main():
         help="Run DeepEval multi-turn conversational evaluation suite",
     )
     parser.add_argument(
+        "--api",
+        action="store_true",
+        help="Launch the FastAPI REST microservice (Swagger docs at /docs)",
+    )
+    parser.add_argument(
         "--seed",
         action="store_true",
         help="Reset and re-seed the SQLite database with dynamic relative dates",
@@ -70,6 +75,11 @@ def main():
     if args.ui:
         print("Launching Streamlit UI...")
         subprocess.run([sys.executable, "-m", "streamlit", "run", "app.py"])
+        return
+
+    if args.api:
+        print("Launching FastAPI REST Microservice on port 8000 (Swagger docs at http://localhost:8000/docs)...")
+        subprocess.run([sys.executable, "-m", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"])
         return
 
     if args.cli:
@@ -102,8 +112,9 @@ def main():
     print("   4. Single-Turn Smoke Gate:    uv run python main.py --eval smoke")
     print("   5. Multi-Turn Live Gate:      uv run python main.py --multiturn live")
     print("   6. Launch Web UI:             uv run python main.py --ui")
-    print("   7. Interactive CLI Chat:      uv run python main.py --cli")
-    print("   8. Re-seed Database:          uv run python main.py --seed")
+    print("   7. Launch REST API (Swagger): uv run python main.py --api")
+    print("   8. Interactive CLI Chat:      uv run python main.py --cli")
+    print("   9. Re-seed Database:          uv run python main.py --seed")
     print("=" * 70 + "\n")
 
 
